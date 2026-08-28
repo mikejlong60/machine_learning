@@ -84,3 +84,60 @@
 
     The consequence to accept: detail older than your ring window is gone. That's a live-debugging tool, not a system of record, 
     and you should say so plainly rather than have customers discover it.
+
+
+# Node tier
+      Kernel: CO-RE programs via libbpf. TLS uprobes for L7, sock:inet_sock_set_state and tcp:tcp_retransmit_skb for L4, udp_sendmsg plus drop 
+      counters for UDP. Aggregate into per-CPU maps so most events never cross into userspace at all.
+
+      Agent (Rust or Go, libbpf-rs / cilium/ebpf):
+
+         reads the BPF ring buffer
+         enriches — cgroup ID or netns to pod, via a local k8s watch; SPIFFE ID from the peer cert
+         sketches — t-digest for latency, count-min for frequencies, HyperLogLog for cardinality. Chosen specifically because they merge, which is what makes node→cluster rollup possible
+         detects locally for anything a single node can see: error-rate spikes, connect failures, RST storms. Fast path, no round trip
+         sheds load if the cluster tier is unreachable — drop to L4-only, widen sampling, never buffer to OOM. You're on every node in a customer's cluster; 
+         being the reason a node dies is unrecoverable reputationally
+
+# Cluster tier
+
+      Merge — combine per-node sketches into cluster-wide percentiles, and join service-graph edges. A calling B across nodes is two half-edges that only become one here.
+      Detection — anything needing a global view or a longer baseline. Seasonal comparisons, cross-service correlation, cardinality anomalies suggesting scanning.
+      Stores — three shapes: a TSDB for metrics (Prometheus-compatible so customers can reuse what they have), a findings store, and a service graph. 
+         Keep them separate; they have different retention and query patterns.
+      Metadata — one k8s watch shared by everything, mapping workload identity. This is deliberately the only place that knows about Kubernetes, which keeps the 
+      agent focused on kernel work.
+
+# Analysis tier
+
+      The model consumes findings and summaries, never raw data. Three jobs: explain a finding in prose, rank and deduplicate forty findings into three, 
+         and translate natural language into queries against the stores.
+      Run it in-cluster — a small model at ten findings a minute needs no GPU and no egress, which is a real selling point for security-conscious customers.
+
+# What crosses each boundary
+      boundary	        shape	                                              rate
+      kernel → agent	ring buffer events + map reads	                      ~10k/s after in-kernel aggregation
+      agent → cluster	serialised sketches, graph edges, local findings	  ~1/s per node
+      cluster → agent	detail requests	on finding only
+      cluster → model	findings + context	                                  ~10/min
+
+# Three things to design in from day one
+
+      Coverage reporting. For every workload, record which tier you actually achieved — L7, L4-only, or nothing. Uprobes 
+         fail silently on Go static binaries and unfamiliar TLS builds, and a monitoring product that quietly under-reports is worse than one that admits a gap.
+
+      Trace context. Extract traceparent at the uprobe. Without it you have correlation and will be tempted to present it as causality. With it you have the 
+         actual call graph, and all four meshes can emit it.
+
+      An agent control plane. Sampling rates, probe enable/disable, ring size — pushed from the cluster tier, not baked into config.
+         You will need to turn things down on a customer's node at 3am without redeploying.
+
+# Build order
+      Single-node agent: BoringSSL uprobes + inet_sock_set_state, histograms in a BPF map, printed to stdout. Prove it works identically 
+         under Istio and Greymatter with no config change — that's your orthogonality thesis, and if it fails, nothing else matters.
+      Enrichment and sketches. Now you have per-service metrics.
+      Cluster merge and the service graph. Now you have a product.
+      Detection, then the model.
+
+      The model is last because it's the easiest part and the least valuable if the data beneath it isn't trustworthy.
+
