@@ -111,13 +111,13 @@ Resource:
 
 # Phase 2 — Classical Machine Learning (6–10 weeks)
 
-Do *not* skip this phase.
+Do *not* skip this phase.* optimization,
+
 
 It teaches:
 
 * feature engineering,
 * bias/variance,
-* optimization,
 * evaluation,
 * generalization.
 
