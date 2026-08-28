@@ -73,7 +73,7 @@
 
 # System Diagram
   ![](./mesh_agnostic_monitoring_system_architecture.png)
-<img height="200" src="./mesh_agnostic_monitoring_system_architecture.png" width="80"/>
+
 # The load-bearing decision: detail stays on the node
 
     Everything else follows from this. The agent keeps a short local ring of full request detail — a few minutes, bounded memory — 
