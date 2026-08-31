@@ -9,12 +9,46 @@
    - Kumu
    - Bare metal EC2, Azure, OSX
    - Plain Envoy environments outside Kubernetes(docker, ...)
+   - Plain docker environments
  - Monitoring should be orthogonal to environment(i.e the monitored environment has no knowledge of its being monitored.)
  - System should be able to monitor TCP applications, HTTP applications, and UDP applications
  - For each of those three environments there will be a specialized collection mechanism
  - There will also be a mechanism for parsing custom data structures like the banking thingy, ,mention the others as well 
 
 ## Design Considerations
+
+# Cannot send all captured data to the model. The model is the AI model.  
+
+# Put the AI model at the end, on findings rather than data.
+
+# Aggregate in the Linux kernel. The dominant cost is copying events to userspace. 
+    BPF maps as per-CPU histograms and counters mean you export summaries, not events. Reserve full event capture 
+    for sampled flows or when something is already known to be interesting. You want detail only when something is wrong,
+    Put the model at the end, on findings rather than data:
+    Causality is not correlation, and customers will conflate them. eBPF gives you concurrent events; it does not give you the call graph.
+
+
+# What to build first
+
+    A single-node prototype: BoringSSL uprobes, HTTP parsing, per-service latency histograms in a BPF map, exported once a second. 
+    Run AAC under Docker Compose and then Istio and then Greymatter unchanged. If the same binary gives you the same signal on both without configuration, 
+    the orthogonality thesis holds and everything else is engineering.
+
+    The model can wait — it's the last stage, and it's the easiest to add once the data underneath is trustworthy.
+
+# System Diagram
+![](./mesh_agnostic_monitoring_system_architecture.png)
+
+# What crosses each boundary
+
+      boundary	        shape	                                              rate
+      kernel → agent	ring buffer events + map reads	                      ~10k/s after in-kernel aggregation
+      agent → cluster	serialised sketches, graph edges, local findings	  ~1/s per node
+      cluster → agent	detail requests	on finding only
+      cluster → model	findings + context	                                  ~10/min
+
+
+#   #################################################
 
  # Don't send captured data to the model
 
