@@ -22,8 +22,8 @@
 ### You have to put the AI model at the end, on findings rather than data.
 
 ### Aggregate in the Linux kernel. The dominant cost is copying events to userspace.
-    The use of BPF maps as per-CPU histograms and counters mean we export event summaries, not events from Kernel(eBPF) to user space.
-    Reserve full event capture for sampled flows or when something is already known to be interesting. You want detail only when something is wrong,
+    The use of BPF maps as per-CPU histograms and counters means we export event summaries, not events from Kernel(eBPF) to user space.
+    We should reserve full event capture for sampled flows or when something is already known to be interesting. You want detail only when something is wrong,
     Put the AI model at the end, on findings rather than data:
 
 
@@ -50,8 +50,8 @@
 ## Node tier
       Kernel: The Kernel program is an eBPF program that runs on the Linux kernel. It is written 
       in restricted C.  It can never block.  It is triggered by an event, a function call, 
-      or a packet, or some other things. It can't have unbounded loops and there are restictions on stack size
-      of 512 bytes.  These restrictions are enforced by a program verifier that
+      or a packet, or some other things. It can't have unbounded loops and stack size is restricted
+      to 512 bytes.  These restrictions are enforced by a program verifier that
       won't compile it unless it passes verification.  The end product is a "byte-code" file
       that is kernel-agnostic.  We don't have to recompile the eBPF program for different versions of
       of Linux.  It's like Java in this way.  There is a map of data called a BPF ring-buffer map 
@@ -89,4 +89,4 @@
       The Analysis tier consumes findings and summaries them.  It should not consume raw data.  Potential responsibilites include:  
       explaining a finding in English, ranking findings, removing duplicate findings.  It should also contain some sort of query 
       language against the various data stores. It does not consume many resources, a small language model at ten findings a minute needs 
-      no GPU.
+      no GPU.  Perhaps this is the layer that feeds the "blast radius" graphs Chris showed last week.
