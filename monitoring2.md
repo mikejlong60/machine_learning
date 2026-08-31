@@ -18,7 +18,7 @@
 
 ## Design Considerations
 
-### Cannot send all captured data to the an AI model. 
+### Cannot send all captured data to an AI model. It will fall over.
 
 ### You have to put the AI model at the end, on findings rather than data.
 
@@ -55,8 +55,9 @@
       to 512 bytes.  These restrictions are enforced by a program verifier that
       won't compile it unless it passes verification.  The end product is a "byte-code" file
       that is kernel-agnostic.  We don't have to recompile the eBPF program for different versions of
-      of Linux.  It's like Java in this way.  There is a map of data called a BPF ring-buffer map 
-      that programs outside the Kernel read.  For the purposes of this paper, that program is called an "Agent"
+      Linux.  It's like Java in this way.  There is a map of data called a BPF ring-buffer map 
+      that programs outside the Kernel read.  For the purposes of this paper, the program that reads
+      the BPF ring-buffer map is called the "Agent"
 
       Agent - Rust:
          The Agent is a program that sits in user space and reads the BPF ring-buffer,
