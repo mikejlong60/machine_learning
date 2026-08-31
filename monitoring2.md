@@ -10,9 +10,10 @@
     - Bare metal EC2, Azure, OSX
     - Plain Envoy environments outside Kubernetes(docker, ...)
     - Plain docker environments
-- Monitoring should be orthogonal to environment(i.e the monitored environment has no knowledge of its being monitored.)
-- System should be able to monitor TCP applications, HTTP applications, and UDP applications
-- For each of those three environments there will be a specialized collection mechanism
+- Monitoring should be orthogonal to environment. We must be able to drop the monitoring tooling into any environment without having to change the environment being monitored.
+- The monitoring system should be able to monitor TCP applications, HTTP applications, and UDP applications
+- For each of those three environments there will be a specialized collection mechanism.  
+- This collection mechanism would be at the Agent level, a WorkloadResolver interface in Rust with separate implementations for Kubernetes, Docker, and bare metal.
 - There will also be a mechanism for parsing custom data structures like Swift.
 
 ## Design Considerations
