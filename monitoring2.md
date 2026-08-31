@@ -17,11 +17,11 @@
 
 ## Design Considerations
 
-## Cannot send all captured data to the an AI model. 
+### Cannot send all captured data to the an AI model. 
 
-## You have to put the AI model at the end, on findings rather than data.
+### You have to put the AI model at the end, on findings rather than data.
 
-## Aggregate in the Linux kernel. The dominant cost is copying events to userspace.
+### Aggregate in the Linux kernel. The dominant cost is copying events to userspace.
     The use of BPF maps as per-CPU histograms and counters mean we export event summaries, not events from Kernel(eBPF) to user space.
     Reserve full event capture for sampled flows or when something is already known to be interesting. You want detail only when something is wrong,
     Put the AI model at the end, on findings rather than data:
